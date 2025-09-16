@@ -1,187 +1,178 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 
 const App = () => {
-  const [user, setUser] = useState({});
-  const [submittedData, setSubmittedData] = useState(null);
+  const { register, handleSubmit, reset, setValue } = useForm();
+  const [users, setUsers] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
 
-  function inputValue(e) {
-    const { name, value, type, checked } = e.target;
+  // Load from localStorage on mount  
+  useEffect(() => {
+    const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
+    setUsers(storedUsers);
+  }, []);
 
-    if (type === "checkbox") {
-      setUser((prev) => {
-        let updatedGoals = prev.goals || [];
-        if (checked) {
-          updatedGoals = [...updatedGoals, value];
-        } else {
-          updatedGoals = updatedGoals.filter((goal) => goal !== value);
-        }
-        return { ...prev, [name]: updatedGoals };
-      });
+  // Save to localStorage whenever users change
+  useEffect(() => {
+    localStorage.setItem("users", JSON.stringify(users));
+  }, [users]);
+
+  const onSubmit = (data) => {
+    if (editingIndex !== null) {
+      // update
+      const updated = [...users];
+      updated[editingIndex] = { ...data, id: users[editingIndex].id };
+      setUsers(updated);
+      setEditingIndex(null);
     } else {
-      setUser({ ...user, [name]: value });
+      // add
+      setUsers([...users, { ...data, id: Date.now() }]);
     }
-  }
+    reset();
+  };
 
-  function signUp(e) {
-    e.preventDefault();
-    setSubmittedData(user); // show data after submit
-  }
+  const handleEdit = (index) => {
+    const user = users[index];
+    for (const key in user) {
+      setValue(key, user[key]); // prefill fields
+    }
+    setEditingIndex(index);
+  };
+
+  const handleDelete = (index) => {
+    setUsers(users.filter((_, i) => i !== index));
+  };
 
   return (
     <>
       <div className="container shadow-lg rounded-4 m-5 p-5 w-50 bg-light mx-auto">
         <h2 className="text-center mb-4 text-success">🏋️ Gym Admission Form</h2>
 
-        <form onSubmit={signUp}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           {/* Full Name */}
           <div className="mb-4">
-            <label className="form-label fw-bold" htmlFor="fullName" >Full Name</label>
+            <label className="form-label fw-bold">Full Name</label>
             <input
-            id="fullName"
-              name="fullName" 
+              {...register("fullName", { required: true })}
               type="text"
               className="form-control"
               placeholder="Enter your full name"
-              onChange={inputValue}
             />
           </div>
 
           {/* Email */}
           <div className="mb-4">
-            <label className="form-label fw-bold"  htmlFor="email">Email Address</label>
+            <label className="form-label fw-bold">Email Address</label>
             <input
-              id="email"
-              name="email"
+              {...register("email", { required: true })}
               type="email"
               className="form-control"
               placeholder="Enter your email"
-              onChange={inputValue}
             />
           </div>
 
           {/* Phone */}
           <div className="mb-4">
-            <label className="form-label fw-bold"  htmlFor="phone">Phone Number</label>
+            <label className="form-label fw-bold">Phone Number</label>
             <input
-              id="phone"
-              name="phone"
+              {...register("phone", { required: true })}
               type="tel"
               className="form-control"
               placeholder="Enter your phone number"
-              onChange={inputValue}
             />
           </div>
 
           {/* Age */}
           <div className="mb-4">
-            <label className="form-label fw-bold"  htmlFor="age">Age</label>
+            <label className="form-label fw-bold">Age</label>
             <input
-              id="age"
-              name="age"
+              {...register("age")}
               type="number"
               className="form-control"
               placeholder="Enter your age"
-              onChange={inputValue}
             />
           </div>
 
           {/* Password */}
           <div className="mb-4">
-            <label className="form-label fw-bold"  htmlFor="password">Password</label>
+            <label className="form-label fw-bold">Password</label>
             <input
-              id="password"
-              name="password"
+              {...register("password")}
               type="password"
               className="form-control"
               placeholder="Enter your password"
-              onChange={inputValue}
             />
           </div>
 
           {/* Gender */}
           <div className="mb-3">
-            <label className="form-label"  htmlFor="gender">Gender</label>
+            <label className="form-label">Gender</label>
             <div>
               <input
+                {...register("gender")}
                 id="male"
-                name="gender"
                 type="radio"
                 value="male"
-                onChange={inputValue}
               />{" "}
               <label htmlFor="male">Male</label>
-              
               <input
-
+                {...register("gender")}
                 id="female"
-                name="gender"
                 type="radio"
                 value="female"
                 className="ms-3"
-                onChange={inputValue}
               />{" "}
               <label htmlFor="female">Female</label>
-              
             </div>
           </div>
 
-          {/* Membership Plan */}
+          {/* Membership */}
           <div className="mb-3">
-            <label className="form-label fw-bold"  htmlFor="membership">Membership Type</label>
-            <select id="membership" name="membership" className="form-select" onChange={inputValue}>
-              <option value="" disabled selected>
-                -- Select Membership --
-              </option>
+            <label className="form-label fw-bold">Membership Type</label>
+            <select {...register("membership")} className="form-select">
+              <option value="">-- Select Membership --</option>
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
               <option value="yearly">Yearly</option>
             </select>
           </div>
 
-          {/* Fitness Goals */}
+          {/* Goals */}
           <div className="mb-3">
-            <label className="form-label fw-bold"  >Fitness Goal</label>
+            <label className="form-label fw-bold">Fitness Goal</label>
             <div>
               <input
-                id="weightloss"
-                name="goals"
                 type="checkbox"
                 value="Weight Loss"
-                onChange={inputValue}
-              />{" "}
+                {...register("goals")}
+                id="weightloss"
+              />
               <label htmlFor="weightloss"> Weight Loss</label>
-             
               <input
-                id="musclegain"
-                name="goals"
                 type="checkbox"
                 value="Muscle Gain"
+                {...register("goals")}
+                id="musclegain"
                 className="ms-3"
-                onChange={inputValue}
-              />{" "}
+              />
               <label htmlFor="musclegain"> Muscle Gain</label>
-             
               <input
-                id="generalfitness"
-                name="goals"
                 type="checkbox"
                 value="General Fitness"
+                {...register("goals")}
+                id="generalfitness"
                 className="ms-3"
-                onChange={inputValue}
-              />{" "}
-              <label htmlFor="generalfitness">General Fitness</label>
-              
+              />
+              <label htmlFor="generalfitness"> General Fitness</label>
             </div>
           </div>
 
           {/* City */}
           <div className="mb-3">
-            <label className="form-label fw-bold"  htmlFor="city">City</label>
-            <select id="city" name="city" className="form-select" onChange={inputValue}>
-              <option value="" disabled selected>
-                -- Select City --
-              </option>
+            <label className="form-label fw-bold">City</label>
+            <select {...register("city")} className="form-select">
+              <option value="">-- Select City --</option>
               <option value="Ahmedabad">Ahmedabad</option>
               <option value="Surat">Surat</option>
               <option value="Other">Other</option>
@@ -190,75 +181,67 @@ const App = () => {
 
           {/* Joining Date */}
           <div className="mb-3">
-            <label className="form-label fw-bold"  htmlFor="joiningDate">Joining Date</label>
-            <input
-              id="joiningDate"
-              name="joiningDate"
-              type="date"
-              className="form-control"
-              onChange={inputValue}
-            />
+            <label className="form-label fw-bold">Joining Date</label>
+            <input {...register("joiningDate")} type="date" className="form-control" />
           </div>
 
-          {/* Submit Button */}
           <div className="text-center">
             <button type="submit" className="btn btn-success px-4 py-2">
-              Submit Admission
+              {editingIndex !== null ? "Update" : "Submit Admission"}
             </button>
           </div>
         </form>
       </div>
 
-      {/* 🔽 Data Display Section */}
-      {submittedData && (
-        <div className="container w-50 bg-white shadow rounded-4 p-4 mt-4">
-          <h4 className="text-success mb-3">✅ Submitted Data</h4>
-          <table className="table table-bordered">
-            <tbody>
+      {/* 🔽 Data Table */}
+      <div className="container w-75 bg-white shadow rounded-4 p-4 mt-4">
+        <h4 className="text-success mb-3">✅ Members List</h4>
+        {users.length === 0 ? (
+          <p className="text-muted">No members added yet.</p>
+        ) : (
+          <table className="table table-bordered table-striped">
+            <thead>
               <tr>
-                <th>Full Name</th>
-                <td>{submittedData.fullName}</td>
-              </tr>
-              <tr>
+                <th>Name</th>
                 <th>Email</th>
-                <td>{submittedData.email}</td>
-              </tr>
-              <tr>
                 <th>Phone</th>
-                <td>{submittedData.phone}</td>
-              </tr>
-              <tr>
-                <th>Age</th>
-                <td>{submittedData.age}</td>
-              </tr>
-              <tr>
-                <th>Password</th>
-                <td>{submittedData.password}</td>
-              </tr>
-              <tr>
-                <th>Gender</th>
-                <td>{submittedData.gender}</td>
-              </tr>
-              <tr>
                 <th>Membership</th>
-                <td>{submittedData.membership}</td>
-              </tr>
-              <tr>
                 <th>Goals</th>
-                <td>{submittedData.goals?.join(", ")}</td>
-              </tr>
-              <tr>
                 <th>City</th>
-                <td>{submittedData.city}</td>
+                <th>Actions</th>
               </tr>
-              <tr>
-                <th>Joining Date</th>
-                <td>{submittedData.joiningDate}</td>
-              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, i) => (
+                <tr key={u.id}>
+                  <td>{u.fullName}</td>
+                  <td>{u.email}</td>
+                  <td>{u.phone}</td>
+                  <td>{u.membership}</td>
+                  <td>
+                    {Array.isArray(u.goals) ? u.goals.join(", ") : u.goals}
+                  </td>
+                  <td>{u.city}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-primary me-2"
+                      onClick={() => handleEdit(i)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleDelete(i)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 };
